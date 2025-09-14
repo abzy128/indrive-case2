@@ -131,6 +131,9 @@ const CustomHeatmapOverlay: React.FC<CustomHeatmapOverlayProps> = ({
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Debug: Log canvas dimensions and data count
+        console.log(`Canvas: ${this.canvas.width}x${this.canvas.height}, Data points: ${this.data.length}`);
+
         // Get intensity values
         const getIntensityValue = (point: HeatmapDataPoint) => {
           switch (this.propertyName) {
@@ -149,6 +152,7 @@ const CustomHeatmapOverlay: React.FC<CustomHeatmapOverlayProps> = ({
         const range = maxIntensity - minIntensity || 1;
 
         // Draw heatmap points
+        let drawnPoints = 0;
         this.data.forEach((point, index) => {
           const position = projection.fromLatLngToDivPixel(
             new google.maps.LatLng(point.latitude, point.longitude)
@@ -164,21 +168,30 @@ const CustomHeatmapOverlay: React.FC<CustomHeatmapOverlayProps> = ({
 
           const rawIntensity = intensityValues[index];
           const normalizedIntensity = (rawIntensity - minIntensity) / range;
-          const radius = Math.max(20, 60 * Math.sqrt(normalizedIntensity));
+          // Ensure minimum radius for visibility and better scaling
+          const radius = Math.max(15, 40 + 30 * Math.sqrt(normalizedIntensity));
 
           // Create radial gradient
           const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, radius);
           const color = this.getColorForIntensity(normalizedIntensity);
 
-          gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${0.8 * normalizedIntensity})`);
-          gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${0.4 * normalizedIntensity})`);
+          // Use higher alpha values and ensure minimum visibility
+          const baseAlpha = Math.max(0.3, 0.6 * normalizedIntensity + 0.2);
+          const midAlpha = Math.max(0.2, 0.4 * normalizedIntensity + 0.1);
+          
+          gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${baseAlpha})`);
+          gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${midAlpha})`);
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
           this.ctx.fillStyle = gradient;
           this.ctx.beginPath();
           this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
           this.ctx.fill();
+          drawnPoints++;
         });
+        
+        // Debug: Log how many points were drawn
+        console.log(`Drawn ${drawnPoints} heatmap points`);
       }
 
       private getColorForIntensity(intensity: number): { r: number; g: number; b: number } {
@@ -194,11 +207,18 @@ const CustomHeatmapOverlay: React.FC<CustomHeatmapOverlayProps> = ({
         const startColor = colors[Math.min(colorIndex, colorCount - 1)];
         const endColor = colors[Math.min(colorIndex + 1, colorCount - 1)];
 
-        return {
+        const result = {
           r: Math.round(startColor.r + (endColor.r - startColor.r) * fraction),
           g: Math.round(startColor.g + (endColor.g - startColor.g) * fraction),
           b: Math.round(startColor.b + (endColor.b - startColor.b) * fraction)
         };
+
+        // Debug logging (remove in production)
+        if (Math.random() < 0.01) { // Log 1% of color calculations
+          console.log(`Intensity: ${intensity.toFixed(3)}, Color: rgb(${result.r}, ${result.g}, ${result.b})`);
+        }
+
+        return result;
       }
 
       private getGradientColors() {
@@ -284,20 +304,59 @@ const InfoMarkers: React.FC<{
     }
   };
 
+  // Get color for a data point based on its value
+  const getColorForPoint = (point: HeatmapDataPoint): string => {
+    // Get intensity value
+    const getIntensityValue = (p: HeatmapDataPoint) => {
+      switch (propertyName) {
+        case 'altitude':
+        case 'speed':
+        case 'azimuth':
+          return p.avg_value || p.weight;
+        default:
+          return p.weight;
+      }
+    };
+
+    const intensityValues = data.map(getIntensityValue);
+    const maxIntensity = Math.max(...intensityValues);
+    const minIntensity = Math.min(...intensityValues);
+    const range = maxIntensity - minIntensity || 1;
+
+    const rawIntensity = getIntensityValue(point);
+    const normalizedIntensity = (rawIntensity - minIntensity) / range;
+
+    // True gradient interpolation between dark blue and cherry red
+    const minColor = { r: 25, g: 25, b: 112 };  // Dark blue (midnight blue)
+    const maxColor = { r: 220, g: 20, b: 60 };  // Cherry red (crimson)
+
+    // Direct interpolation based on normalized intensity
+    const r = Math.round(minColor.r + (maxColor.r - minColor.r) * normalizedIntensity);
+    const g = Math.round(minColor.g + (maxColor.g - minColor.g) * normalizedIntensity);
+    const b = Math.round(minColor.b + (maxColor.b - minColor.b) * normalizedIntensity);
+
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
   return (
     <>
-      {data.map((point, index) => (
-        <OverlayView
-          key={`${point.h3_id}-${index}`}
-          position={{ lat: point.latitude, lng: point.longitude }}
-          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-        >
-          <div
-            className="w-4 h-4 rounded-full bg-white border-2 border-blue-500 cursor-pointer hover:scale-125 transition-transform shadow-lg"
-            onClick={() => setSelectedPoint(point)}
-          />
-        </OverlayView>
-      ))}
+      {data.map((point, index) => {
+        const markerColor = getColorForPoint(point);
+        return (
+          <OverlayView
+            key={`${point.h3_id}-${index}`}
+            position={{ lat: point.latitude, lng: point.longitude }}
+            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+          >
+            <div
+              className="w-5 h-5 rounded-full cursor-pointer hover:scale-125 transition-transform shadow-lg border-2 border-white"
+              style={{ backgroundColor: markerColor }}
+              onClick={() => setSelectedPoint(point)}
+              title={`Value: ${propertyName ? (point.avg_value || point.weight).toFixed(2) : point.weight}`}
+            />
+          </OverlayView>
+        );
+      })}
 
       {selectedPoint && (
         <OverlayView
@@ -377,9 +436,9 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
 
   const getMapTitle = () => {
     if (propertyName) {
-      return `Taxi Data - ${propertyName.charAt(0).toUpperCase() + propertyName.slice(1)} Heatmap`;
+      return `Taxi Data - ${propertyName.charAt(0).toUpperCase() + propertyName.slice(1)} Visualization`;
     }
-    return 'Taxi Data - Activity Heatmap';
+    return 'Taxi Data - Activity Visualization';
   };
 
   const getUnit = (propertyName: string | null): string => {
@@ -411,11 +470,12 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
             fullscreenControl: true,
           }}
         >
-          <CustomHeatmapOverlay
+          {/* CustomHeatmapOverlay disabled - using colored markers instead */}
+          {/* <CustomHeatmapOverlay
             data={data}
             propertyName={propertyName}
             map={map}
-          />
+          /> */}
           <InfoMarkers data={data} propertyName={propertyName} />
         </GoogleMap>
       </LoadScript>
@@ -504,9 +564,15 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-xs text-gray-600">Low</span>
-            <div className="w-20 h-3 bg-gradient-to-r from-blue-500 via-green-500 via-yellow-500 to-red-500 rounded"></div>
+            <div 
+              className="w-20 h-3 rounded"
+              style={{
+                background: 'linear-gradient(to right, rgb(25, 25, 112), rgb(220, 20, 60))'
+              }}
+            ></div>
             <span className="text-xs text-gray-600">High</span>
           </div>
+          <div className="text-xs text-gray-500 mt-1">True gradient from dark blue to cherry red</div>
         </div>
       )}
 
