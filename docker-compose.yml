@@ -1,0 +1,13 @@
+networks:
+  default:
+    name: indrive2
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 127.0.0.1:12002:8000
+    volumes:
+      - ./data:/data
