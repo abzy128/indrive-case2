@@ -4,6 +4,7 @@ networks:
 
 services:
   backend:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: Dockerfile
