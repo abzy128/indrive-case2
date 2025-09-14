@@ -36,7 +36,7 @@ interface CustomHeatmapOverlayProps {
 }
 
 // Custom hook for fetching heatmap data
-const useHeatmapData = (propertyName: string | null, resolution: number = 8) => {
+const useHeatmapData = (propertyName: string | null, resolution: number = 9) => {
   const [data, setData] = useState<HeatmapDataPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -358,7 +358,7 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
   center,
   zoom,
   propertyName,
-  resolution = 8,
+  resolution = 9,
   className = '',
   googleMapsApiKey,
   onPropertyChange,

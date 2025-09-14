@@ -4,7 +4,7 @@ import TaxiHeatmap from "../components/TaxiHeatmap";
 
 export default function Home() {
   const [propertyName, setPropertyName] = useState<'altitude' | 'speed' | 'azimuth' | null>('speed');
-  const [resolution, setResolution] = useState<number>(8);
+  const [resolution, setResolution] = useState<number>(9);
 
   const handlePropertyChange = (property: 'altitude' | 'speed' | 'azimuth' | null) => {
     setPropertyName(property);
