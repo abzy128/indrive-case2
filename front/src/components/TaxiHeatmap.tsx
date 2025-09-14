@@ -1,5 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { GoogleMap, LoadScript, OverlayView } from '@react-google-maps/api';
+import { ChevronDownIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // Types
 interface HeatmapDataPoint {
@@ -18,6 +25,7 @@ interface HeatmapProps {
   resolution?: number;
   className?: string;
   googleMapsApiKey: string;
+  onPropertyChange?: (property: 'altitude' | 'speed' | 'azimuth' | null) => void;
 }
 
 interface CustomHeatmapOverlayProps {
@@ -295,7 +303,10 @@ const InfoMarkers: React.FC<{
           position={{ lat: selectedPoint.latitude, lng: selectedPoint.longitude }}
           mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
         >
-          <div className="bg-white p-4 rounded-lg shadow-lg border max-w-xs relative">
+          <div
+            className="bg-white p-4 rounded-lg shadow-lg border relative"
+            style={{ maxWidth: '250px', width: 'fit-content', minWidth: 0 }}
+          >
             <button
               className="absolute top-1 right-2 text-gray-500 hover:text-gray-700 text-xl leading-none"
               onClick={() => setSelectedPoint(null)}
@@ -348,7 +359,8 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
   propertyName,
   resolution = 8,
   className = '',
-  googleMapsApiKey
+  googleMapsApiKey,
+  onPropertyChange
 }) => {
   const { data, loading, error } = useHeatmapData(propertyName, resolution);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -415,6 +427,49 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
           </p>
         )}
       </div>
+
+      {/* Property selection dropdown */}
+      {onPropertyChange && (
+        <div className="absolute top-4 right-4 bg-white bg-opacity-95 px-3 py-2 rounded-lg shadow-md z-10">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center space-x-2 text-sm font-medium text-gray-800 hover:text-gray-600 transition-colors">
+              <span>
+                {propertyName === null ? 'Count' : 
+                 propertyName === 'altitude' ? 'Altitude' :
+                 propertyName === 'speed' ? 'Speed' :
+                 propertyName === 'azimuth' ? 'Azimuth' : 'Count'}
+              </span>
+              <ChevronDownIcon className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem 
+                onClick={() => onPropertyChange(null)}
+                className={propertyName === null ? 'bg-accent' : ''}
+              >
+                Count
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onPropertyChange('altitude')}
+                className={propertyName === 'altitude' ? 'bg-accent' : ''}
+              >
+                Altitude
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onPropertyChange('speed')}
+                className={propertyName === 'speed' ? 'bg-accent' : ''}
+              >
+                Speed
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onPropertyChange('azimuth')}
+                className={propertyName === 'azimuth' ? 'bg-accent' : ''}
+              >
+                Azimuth
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
       {/* Legend */}
       {propertyName && data.length > 0 && (
