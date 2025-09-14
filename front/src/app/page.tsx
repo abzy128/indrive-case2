@@ -1,14 +1,17 @@
 "use client";
-import { useState } from "react";
-import GoogleMap from "../components/GoogleMap";
+import TaxiHeatmap from "../components/TaxiHeatmap";
 
 export default function Home() {
   return (
     <div>
       <div style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", zIndex: 0, margin: "5px" }}>
-        <GoogleMap
-          center={{ lat: 51.08916576942158, lng: 71.416075309543 }}
-          zoom={15}
+        <TaxiHeatmap
+          center={{ lat: 51.090414, lng: 71.436145 }}
+          zoom={12}
+          propertyName="speed"
+          resolution={8}
+          googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
+          className="rounded-lg shadow-lg"
         />
       </div>
     </div>
