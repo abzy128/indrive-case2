@@ -326,59 +326,14 @@ const InfoMarkers: React.FC<{
     const rawIntensity = getIntensityValue(point);
     const normalizedIntensity = (rawIntensity - minIntensity) / range;
 
-    // Get gradient colors
-    const getGradientColors = () => {
-      switch (propertyName) {
-        case 'speed':
-          return [
-            { r: 0, g: 0, b: 128 },    // Dark blue for low speed
-            { r: 0, g: 0, b: 255 },    // Blue
-            { r: 0, g: 255, b: 0 },    // Green
-            { r: 255, g: 255, b: 0 },  // Yellow
-            { r: 255, g: 128, b: 0 },  // Orange
-            { r: 255, g: 0, b: 0 }     // Red for high speed
-          ];
-        case 'altitude':
-          return [
-            { r: 0, g: 102, b: 204 },  // Blue for low altitude
-            { r: 0, g: 204, b: 102 },  // Green
-            { r: 204, g: 204, b: 0 },  // Yellow
-            { r: 204, g: 102, b: 0 },  // Orange
-            { r: 204, g: 0, b: 0 }     // Red for high altitude
-          ];
-        case 'azimuth':
-          return [
-            { r: 128, g: 0, b: 128 },  // Purple
-            { r: 0, g: 0, b: 255 },    // Blue
-            { r: 0, g: 255, b: 0 },    // Green
-            { r: 255, g: 255, b: 0 },  // Yellow
-            { r: 255, g: 128, b: 0 },  // Orange
-            { r: 255, g: 0, b: 0 }     // Red
-          ];
-        default:
-          return [
-            { r: 0, g: 0, b: 255 },    // Blue
-            { r: 0, g: 255, b: 255 },  // Cyan
-            { r: 0, g: 255, b: 0 },    // Green
-            { r: 255, g: 255, b: 0 },  // Yellow
-            { r: 255, g: 128, b: 0 },  // Orange
-            { r: 255, g: 0, b: 0 }     // Red
-          ];
-      }
-    };
+    // True gradient interpolation between dark blue and cherry red
+    const minColor = { r: 25, g: 25, b: 112 };  // Dark blue (midnight blue)
+    const maxColor = { r: 220, g: 20, b: 60 };  // Cherry red (crimson)
 
-    const colors = getGradientColors();
-    const colorCount = colors.length;
-    const scaledIntensity = normalizedIntensity * (colorCount - 1);
-    const colorIndex = Math.floor(scaledIntensity);
-    const fraction = scaledIntensity - colorIndex;
-
-    const startColor = colors[Math.min(colorIndex, colorCount - 1)];
-    const endColor = colors[Math.min(colorIndex + 1, colorCount - 1)];
-
-    const r = Math.round(startColor.r + (endColor.r - startColor.r) * fraction);
-    const g = Math.round(startColor.g + (endColor.g - startColor.g) * fraction);
-    const b = Math.round(startColor.b + (endColor.b - startColor.b) * fraction);
+    // Direct interpolation based on normalized intensity
+    const r = Math.round(minColor.r + (maxColor.r - minColor.r) * normalizedIntensity);
+    const g = Math.round(minColor.g + (maxColor.g - minColor.g) * normalizedIntensity);
+    const b = Math.round(minColor.b + (maxColor.b - minColor.b) * normalizedIntensity);
 
     return `rgb(${r}, ${g}, ${b})`;
   };
@@ -609,10 +564,15 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-xs text-gray-600">Low</span>
-            <div className="w-20 h-3 bg-gradient-to-r from-blue-500 via-green-500 via-yellow-500 to-red-500 rounded"></div>
+            <div 
+              className="w-20 h-3 rounded"
+              style={{
+                background: 'linear-gradient(to right, rgb(25, 25, 112), rgb(220, 20, 60))'
+              }}
+            ></div>
             <span className="text-xs text-gray-600">High</span>
           </div>
-          <div className="text-xs text-gray-500 mt-1">Colored markers show intensity</div>
+          <div className="text-xs text-gray-500 mt-1">True gradient from dark blue to cherry red</div>
         </div>
       )}
 
