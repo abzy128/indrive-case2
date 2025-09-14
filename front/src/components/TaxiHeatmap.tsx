@@ -26,6 +26,7 @@ interface HeatmapProps {
   className?: string;
   googleMapsApiKey: string;
   onPropertyChange?: (property: 'altitude' | 'speed' | 'azimuth' | null) => void;
+  onResolutionChange?: (resolution: number) => void;
 }
 
 interface CustomHeatmapOverlayProps {
@@ -360,7 +361,8 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
   resolution = 8,
   className = '',
   googleMapsApiKey,
-  onPropertyChange
+  onPropertyChange,
+  onResolutionChange
 }) => {
   const { data, loading, error } = useHeatmapData(propertyName, resolution);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -466,6 +468,29 @@ const TaxiHeatmap: React.FC<HeatmapProps> = ({
               >
                 Azimuth
               </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
+      {/* Resolution selection dropdown */}
+      {onResolutionChange && (
+        <div className="absolute top-16 right-4 bg-white bg-opacity-95 px-3 py-2 rounded-lg shadow-md z-10">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center space-x-2 text-sm font-medium text-gray-800 hover:text-gray-600 transition-colors">
+              <span>Resolution: {resolution}</span>
+              <ChevronDownIcon className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              {Array.from({ length: 9 }, (_, i) => i + 6).map((res) => (
+                <DropdownMenuItem 
+                  key={res}
+                  onClick={() => onResolutionChange(res)}
+                  className={resolution === res ? 'bg-accent' : ''}
+                >
+                  {res}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
