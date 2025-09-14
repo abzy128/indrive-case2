@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi import Query
+from fastapi.middleware.cors import CORSMiddleware
 from cachetools import TTLCache
 import hashlib
 import json
@@ -10,6 +11,19 @@ from lib.h3_hex import h3_aggregate
 from lib.data import get_data
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://indrive.abzy.kz",
+        "https://indrive-case2.vercel.app"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize cache with TTL (Time To Live) of 1 hour (3600 seconds)
 # Cache can hold up to 100 entries
